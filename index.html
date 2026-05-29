@@ -8,11 +8,9 @@
     <style>
         body { margin: 0; background: #000; color: white; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Kamera ekranı tam doldursun */
         #reader { flex-grow: 1; position: relative; }
         #reader video { width: 100%; height: 100%; object-fit: cover; }
         
-        /* QR çərçivəsi */
         #reader__scan_region { border: 2px solid white !important; border-radius: 10px; }
 
         .top-controls { display: flex; justify-content: space-around; padding: 20px; background: rgba(0,0,0,0.4); position: absolute; top: 0; width: 100%; z-index: 10; }
@@ -20,7 +18,7 @@
         
         .bottom-controls { position: absolute; bottom: 40px; width: 100%; text-align: center; z-index: 10; }
         .zoom-slider { width: 70%; accent-color: #f39c12; margin-bottom: 20px; }
-        .btn { padding: 10px 25px; background: #f39c12; border: none; border-radius: 5px; color: white; cursor: pointer; display: none; font-weight: bold; }
+        .btn { padding: 10px 25px; background: #f39c12; border: none; border-radius: 5px; color: white; cursor: pointer; display: none; font-weight: bold; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -46,41 +44,32 @@
         let isFlashOn = false;
 
         function startScanner() {
-            Html5Qrcode.getCameras().then(devices => {
-                if (devices && devices.length > 0) {
-                    // Cihazdaki arka kamerayı bulmaya çalış
-                    let cameraId = devices.find(d => /back|rear|environment/i.test(d.label))?.id || devices[devices.length - 1].id;
-                    
-                    html5QrCode.start(
-                        { deviceId: { exact: cameraId } },
-                        { fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 },
-                        (decodedText) => {
-                            lastResult = decodedText;
-                            document.getElementById('btnOpen').style.display = "inline-block";
-                            document.getElementById('btnOpen').innerText = "Aç: " + decodedText.substring(0, 15) + "...";
-                        }
-                    );
-                } else {
-                    // Kamera bulunamazsa varsayılan
-                    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: {width: 250, height: 250} }, (decodedText) => {
-                        lastResult = decodedText;
-                        document.getElementById('btnOpen').style.display = "inline-block";
-                        document.getElementById('btnOpen').innerText = "Aç: " + decodedText.substring(0, 15) + "...";
-                    });
+            // Kamera və avtofokus üçün ideal parametrlər
+            const config = { fps: 15, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 };
+            
+            html5QrCode.start(
+                { facingMode: { ideal: "environment" } }, 
+                config,
+                (decodedText) => {
+                    handleResult(decodedText);
                 }
-            }).catch(err => {
-                html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: {width: 250, height: 250} }, (decodedText) => {
-                    lastResult = decodedText;
-                    document.getElementById('btnOpen').style.display = "inline-block";
-                    document.getElementById('btnOpen').innerText = "Aç: " + decodedText.substring(0, 15) + "...";
-                });
+            ).catch(err => {
+                console.error(err);
+                alert("Kamera işə salına bilmədi. Zəhmət olmasa icazələri yoxlayın.");
             });
+        }
+
+        function handleResult(text) {
+            lastResult = text;
+            const btn = document.getElementById('btnOpen');
+            btn.style.display = "inline-block";
+            btn.innerText = "Aç: " + (text.length > 15 ? text.substring(0, 15) + "..." : text);
         }
 
         function toggleFlash() {
             isFlashOn = !isFlashOn;
             html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] })
-                .catch(err => alert("Cihazda flaş dəstəklənmir."));
+                .catch(() => alert("Flaş dəstəklənmir."));
         }
 
         function applyZoom(val) {
@@ -89,19 +78,29 @@
         }
 
         function scanFile(input) {
-            if (input.files[0]) {
+            if (input.files && input.files[0]) {
                 html5QrCode.scanFile(input.files[0], true)
-                    .then(res => window.location.href = res)
-                    .catch(() => alert("Kod tapılmadı."));
+                    .then(decodedText => {
+                        handleResult(decodedText);
+                    })
+                    .catch(() => alert("Şəkildə QR kod tapılmadı."));
             }
         }
 
-        function openLink() { if(lastResult) window.location.href = lastResult; }
+        function openLink() { 
+            if(lastResult) {
+                if(lastResult.startsWith('http')) {
+                    window.location.href = lastResult;
+                } else {
+                    alert("Mətn: " + lastResult);
+                }
+            }
+        }
 
         window.onload = () => {
             const btn = document.createElement("button");
             btn.innerText = "Skaneri Başlat";
-            btn.style = "position:absolute; top:50%; left:35%; padding:15px; z-index:20; background:#f39c12; border:none; border-radius:5px;";
+            btn.style = "position:absolute; top:50%; left:30%; padding:15px; z-index:20; background:#f39c12; border:none; border-radius:5px; color:white; font-size:16px;";
             btn.onclick = () => { startScanner(); btn.style.display = "none"; };
             document.body.appendChild(btn);
         };
