@@ -7,30 +7,36 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { margin: 0; background: #000; color: white; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #reader { width: 100%; max-width: 500px; display: none; }
+        #reader { width: 100%; max-width: 500px; display: none; margin-bottom: 20px; }
         .main-ui { text-align: center; }
         .btn-start { padding: 15px 30px; background: #f39c12; border: none; border-radius: 5px; color: white; cursor: pointer; font-size: 18px; }
-        #actions { display: none; margin-top: 20px; gap: 10px; }
-        .btn { padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
+        .top-controls { position: absolute; top: 20px; width: 100%; display: flex; justify-content: space-around; }
+        .icon-btn { color: white; cursor: pointer; background: none; border: none; font-size: 14px; }
+        #actions { display: none; flex-direction: column; gap: 10px; width: 80%; max-width: 300px; }
+        .btn { padding: 12px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
         #btnOpen { background: #27ae60; }
         #btnShare { background: #3498db; }
     </style>
 </head>
 <body>
 
+    <div class="top-controls">
+        <button class="icon-btn" onclick="document.getElementById('fileInput').click()">🖼️<br>Qalereya</button>
+        <button class="icon-btn" onclick="window.location.href='https://elimeherremov.taplink.ws/'">❓<br>Yardım</button>
+    </div>
+
+    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="scanFile(this)">
+
     <div id="startScreen" class="main-ui">
         <h1>QR Kodu oxucu</h1>
-        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="scanFile(this)">
-        <button class="btn-start" onclick="activateScanner()">Üzərinə vur (Kamera)</button>
-        <br><br>
-        <button class="btn-start" onclick="document.getElementById('fileInput').click()">Qalereyadan seç</button>
+        <button class="btn-start" onclick="activateScanner()">Üzərinə vur</button>
     </div>
 
     <div id="reader"></div>
     
     <div id="actions">
         <button id="btnOpen" class="btn" onclick="openLink()">Aç</button>
-        <button id="btnShare" class="btn" onclick="shareResult()">Paylaş</button>
+        <button id="btnShare" class="btn" onclick="shareResult()">Paylaş (Chrome və s.)</button>
     </div>
 
     <script>
@@ -51,7 +57,7 @@
         function handleResult(text) {
             lastResult = text;
             document.getElementById('actions').style.display = "flex";
-            document.getElementById('btnOpen').innerText = "Aç: " + (text.length > 15 ? text.substring(0, 15) + "..." : text);
+            document.getElementById('btnOpen').innerText = "Aç: " + (text.length > 20 ? text.substring(0, 20) + "..." : text);
         }
 
         function scanFile(input) {
@@ -72,7 +78,7 @@
         function shareResult() {
             if (navigator.share) {
                 navigator.share({ title: 'QR Nəticəsi', url: lastResult })
-                    .catch(err => alert("Paylaşım alınmadı."));
+                    .catch(err => console.log("Paylaşım ləğv edildi"));
             } else {
                 alert("Nəticə: " + lastResult);
             }
