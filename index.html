@@ -19,6 +19,9 @@
         .bottom-controls { position: absolute; bottom: 40px; width: 100%; text-align: center; z-index: 10; }
         .zoom-slider { width: 70%; accent-color: #f39c12; margin-bottom: 20px; }
         .btn { padding: 10px 25px; background: #f39c12; border: none; border-radius: 5px; color: white; cursor: pointer; display: none; font-weight: bold; font-size: 16px; }
+        
+        /* Təlimat mətni üçün üslub */
+        #instruction { position: absolute; top: 40%; width: 100%; text-align: center; color: #fff; font-size: 18px; z-index: 5; pointer-events: none; padding: 0 20px; text-shadow: 1px 1px 2px black; }
     </style>
 </head>
 <body>
@@ -29,6 +32,8 @@
         <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="scanFile(this)">
         <button class="icon-btn" onclick="window.location.href='https://elimeherremov.taplink.ws/'">❓<br>Yardım</button>
     </div>
+
+    <div id="instruction">Ya QR kodu skan et, ya da Qalereyaya toxunub şəkil seç.</div>
 
     <div id="reader"></div>
 
@@ -43,20 +48,25 @@
         let lastResult = "";
         let isFlashOn = false;
 
-        function startScanner() {
-            // Kamera və avtofokus üçün ideal parametrlər
-            const config = { fps: 15, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 };
-            
-            html5QrCode.start(
-                { facingMode: { ideal: "environment" } }, 
-                config,
-                (decodedText) => {
-                    handleResult(decodedText);
+        async function startScanner() {
+            try {
+                // Kamera və flaş dəstəyi üçün icazə tələbi
+                const devices = await Html5Qrcode.getCameras();
+                if (devices && devices.length > 0) {
+                    const config = { fps: 15, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 };
+                    
+                    html5QrCode.start(
+                        { facingMode: { ideal: "environment" } }, 
+                        config,
+                        (decodedText) => {
+                            handleResult(decodedText);
+                        }
+                    );
+                    document.getElementById('instruction').style.display = "none";
                 }
-            ).catch(err => {
-                console.error(err);
+            } catch (err) {
                 alert("Kamera işə salına bilmədi. Zəhmət olmasa icazələri yoxlayın.");
-            });
+            }
         }
 
         function handleResult(text) {
@@ -64,12 +74,14 @@
             const btn = document.getElementById('btnOpen');
             btn.style.display = "inline-block";
             btn.innerText = "Aç: " + (text.length > 15 ? text.substring(0, 15) + "..." : text);
+            document.getElementById('instruction').style.display = "none";
         }
 
         function toggleFlash() {
             isFlashOn = !isFlashOn;
+            // Flaşın aktivləşməsi üçün constraints
             html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] })
-                .catch(() => alert("Flaş dəstəklənmir."));
+                .catch(() => alert("Flaş bu cihazda dəstəklənmir."));
         }
 
         function applyZoom(val) {
