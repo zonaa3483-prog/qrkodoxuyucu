@@ -8,17 +8,18 @@
     <style>
         body { margin: 0; background: #000; color: white; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Skaner sahəsini tam mərkəzləşdiririk */
-        #reader { flex-grow: 1; display: flex; justify-content: center; align-items: center; position: relative; }
+        /* Kamera ekranı tam doldursun */
+        #reader { flex-grow: 1; position: relative; }
+        #reader video { width: 100%; height: 100%; object-fit: cover; }
         
-        /* QR çərçivəsini ağ rəngdə və mərkəzdə saxlamaq üçün stil */
+        /* QR çərçivəsi */
         #reader__scan_region { border: 2px solid white !important; border-radius: 10px; }
 
-        .top-controls { display: flex; justify-content: space-around; padding: 20px; background: rgba(0,0,0,0.6); position: absolute; top: 0; width: 100%; z-index: 10; }
+        .top-controls { display: flex; justify-content: space-around; padding: 20px; background: rgba(0,0,0,0.4); position: absolute; top: 0; width: 100%; z-index: 10; }
         .icon-btn { text-align: center; font-size: 12px; cursor: pointer; color: white; border: none; background: none; }
         
         .bottom-controls { position: absolute; bottom: 40px; width: 100%; text-align: center; z-index: 10; }
-        .zoom-controls { display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 15px; font-size: 18px; font-weight: bold; }
+        .zoom-slider { width: 70%; accent-color: #f39c12; margin-bottom: 20px; }
         .btn { padding: 10px 25px; background: #f39c12; border: none; border-radius: 5px; color: white; cursor: pointer; display: none; font-weight: bold; }
     </style>
 </head>
@@ -34,56 +35,56 @@
     <div id="reader"></div>
 
     <div class="bottom-controls">
-        <div class="zoom-controls">
-            <span onclick="changeZoom(-0.5)" style="cursor:pointer">-</span>
-            <span>Zoom</span>
-            <span onclick="changeZoom(0.5)" style="cursor:pointer">+</span>
-        </div>
+        <input type="range" class="zoom-slider" min="1" max="3" step="0.1" value="1" oninput="applyZoom(this.value)">
+        <br>
         <button id="btnOpen" class="btn" onclick="openLink()">Aç</button>
     </div>
 
     <script>
         let html5QrCode = new Html5Qrcode("reader");
         let lastResult = "";
+        let isFlashOn = false;
 
-        // Kamera icazəsi və başlanğıc
         function startScanner() {
             html5QrCode.start(
                 { facingMode: "environment" },
-                { fps: 10, qrbox: {width: 250, height: 250} }, // Kvadrat ölçüsü
+                { fps: 10, qrbox: {width: 250, height: 250} },
                 (decodedText) => {
                     lastResult = decodedText;
                     document.getElementById('btnOpen').style.display = "inline-block";
-                    document.getElementById('btnOpen').innerText = "Aç: " + decodedText.substring(0, 10) + "...";
+                    document.getElementById('btnOpen').innerText = "Aç: " + decodedText.substring(0, 15) + "...";
                 }
-            ).catch(err => alert("Kamera tapılmadı və ya icazə verilmədi."));
+            );
         }
 
-        // Başlanğıc üçün düymə
-        window.onload = () => {
-            const btn = document.createElement("button");
-            btn.innerText = "Skaneri Başlat";
-            btn.style = "position:absolute; top:50%; left:35%; padding:15px; z-index:20; background:#f39c12; color:white; border:none; border-radius:5px;";
-            btn.onclick = () => { startScanner(); btn.style.display = "none"; };
-            document.body.appendChild(btn);
-        };
+        function toggleFlash() {
+            isFlashOn = !isFlashOn;
+            html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] })
+                .catch(err => alert("Cihazda flaş dəstəklənmir."));
+        }
+
+        function applyZoom(val) {
+            const video = document.querySelector("#reader video");
+            if (video) video.style.transform = `scale(${val})`;
+        }
 
         function scanFile(input) {
-            if (input.files && input.files[0]) {
+            if (input.files[0]) {
                 html5QrCode.scanFile(input.files[0], true)
-                    .then(decodedText => { window.location.href = decodedText; })
-                    .catch(err => alert("Şəkildə QR kod tapılmadı."));
+                    .then(res => window.location.href = res)
+                    .catch(() => alert("Kod tapılmadı."));
             }
         }
 
-        function changeZoom(val) {
-            const reader = document.getElementById('reader');
-            let currentScale = reader.style.transform ? parseFloat(reader.style.transform.replace('scale(', '')) : 1;
-            let newScale = Math.min(Math.max(currentScale + val, 1), 3);
-            reader.style.transform = `scale(${newScale})`;
-        }
-
         function openLink() { if(lastResult) window.location.href = lastResult; }
+
+        window.onload = () => {
+            const btn = document.createElement("button");
+            btn.innerText = "Skaneri Başlat";
+            btn.style = "position:absolute; top:50%; left:35%; padding:15px; z-index:20; background:#f39c12; border:none; border-radius:5px;";
+            btn.onclick = () => { startScanner(); btn.style.display = "none"; };
+            document.body.appendChild(btn);
+        };
     </script>
 </body>
 </html>
