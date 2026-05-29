@@ -13,9 +13,9 @@
         .top-controls { position: absolute; top: 20px; width: 100%; display: flex; justify-content: space-around; z-index: 10; }
         .icon-btn { color: white; cursor: pointer; background: none; border: none; font-size: 14px; }
         
-        /* Düymələrin kameranın üzərində olması üçün */
-        #actions { display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 300px; z-index: 20; flex-direction: column; gap: 10px; }
-        .btn { padding: 12px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; width: 100%; }
+        /* Düymələrin tam ortada olması üçün */
+        #actions { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 300px; z-index: 20; flex-direction: column; gap: 15px; background: rgba(0,0,0,0.7); padding: 20px; border-radius: 10px; }
+        .btn { padding: 15px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; width: 100%; font-size: 16px; }
         #btnOpen { background: #27ae60; }
         #btnShare { background: #3498db; }
     </style>
@@ -57,11 +57,19 @@
             document.getElementById('startScreen').style.display = 'none';
             document.getElementById('reader').style.display = 'block';
             
+            // Daha sürətli alqılama üçün konfiqurasiya
+            const config = { fps: 20, qrbox: { width: 300, height: 300 }, aspectRatio: 1.0 };
+            
             html5QrCode.start(
                 { facingMode: { ideal: "environment" } },
-                { fps: 10, qrbox: 250 },
-                (decodedText) => { handleResult(decodedText); html5QrCode.stop(); }
-            ).catch(err => alert("Kamera icazəsi tələb olunur!"));
+                config,
+                (decodedText) => { 
+                    handleResult(decodedText); 
+                    html5QrCode.stop(); 
+                }
+            ).catch(err => {
+                alert("Kamera işə düşmədi. Zəhmət olmasa icazəni yoxlayın.");
+            });
         }
 
         function handleResult(text) {
@@ -74,9 +82,14 @@
             if (input.files && input.files[0]) {
                 document.getElementById('startScreen').style.display = 'none';
                 document.getElementById('reader').style.display = 'block';
+                
+                // Qalereya üçün daha yüksək dəqiqlik
                 html5QrCode.scanFile(input.files[0], true)
                     .then(decodedText => { handleResult(decodedText); })
-                    .catch(() => alert("Şəkildə QR kod tapılmadı."));
+                    .catch(() => {
+                        alert("Şəkildə QR kod aşkarlanmadı. Lütfən, daha aydın şəkil seçin.");
+                        window.location.reload(); // Xəta zamanı yenidən yüklə
+                    });
             }
         }
 
