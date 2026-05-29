@@ -6,63 +6,87 @@
     <title>Ağıllı Skaner</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; }
-        
-        /* Skaner Konteyneri */
+        body { margin: 0; background: #000; color: white; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         #reader { flex-grow: 1; position: relative; }
-        
-        /* Üst İkonlar (Aydınlıq, Görünüştara, Yardım) */
         .top-controls { display: flex; justify-content: space-around; padding: 20px; background: rgba(0,0,0,0.6); position: absolute; top: 0; width: 100%; z-index: 10; }
-        .icon-btn { text-align: center; font-size: 12px; cursor: pointer; }
-        
-        /* Alt İdarəetmə (Zoom və Link) */
+        .icon-btn { text-align: center; font-size: 12px; cursor: pointer; color: white; border: none; background: none; }
         .bottom-controls { position: absolute; bottom: 40px; width: 100%; text-align: center; z-index: 10; }
-        .zoom-container { padding: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .zoom-slider { width: 70%; accent-color: #f39c12; }
-        
+        .zoom-controls { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px; }
         .btn { padding: 10px 20px; background: #f39c12; border: none; border-radius: 5px; color: white; cursor: pointer; display: none; }
     </style>
 </head>
 <body>
 
     <div class="top-controls">
-        <div class="icon-btn">💡<br>Aydınlıq</div>
-        <div class="icon-btn">🖼️<br>Görüntü Tara</div>
-        <div class="icon-btn">❓<br>Yardım</div>
+        <button class="icon-btn" onclick="toggleFlash()">💡<br>Flaş</button>
+        <button class="icon-btn" onclick="document.getElementById('fileInput').click()">🖼️<br>Qalereya</button>
+        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="scanFile(this)">
+        <button class="icon-btn" onclick="window.location.href='https://elimeherremov.taplink.ws/'">❓<br>Yardım</button>
     </div>
 
     <div id="reader"></div>
 
     <div class="bottom-controls">
-        <div class="zoom-container">
-            <span>🔍</span>
-            <input type="range" class="zoom-slider" min="1" max="5" value="1">
-            <span>🔍</span>
+        <div class="zoom-controls">
+            <button class="icon-btn" onclick="changeZoom(-0.5)">➖</button>
+            <span>Zoom</span>
+            <button class="icon-btn" onclick="changeZoom(0.5)">➕</button>
         </div>
-        <button id="btnOpen" class="btn" onclick="openLink()">Linkə Get</button>
+        <button id="btnOpen" class="btn" onclick="openLink()">Aç</button>
     </div>
 
     <script>
-        let lastResult = "";
-        const html5QrCode = new Html5Qrcode("reader");
+        let html5QrCode = new Html5Qrcode("reader");
+        let isFlashOn = false;
+        let currentZoom = 1;
 
-        // Kameranı başlat
-        Html5QrCode.getCameras().then(devices => {
-            if (devices && devices.length) {
-                html5QrCode.start(
-                    { facingMode: "environment" },
-                    { fps: 10, qrbox: {width: 250, height: 250} },
-                    (decodedText) => {
-                        lastResult = decodedText;
-                        document.getElementById('btnOpen').style.display = "inline-block";
-                        document.getElementById('btnOpen').innerText = "Aç: " + decodedText.substring(0, 15) + "...";
-                    }
-                );
+        // Kameranı başlatma funksiyası
+        function startScanner() {
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: {width: 250, height: 250} },
+                (decodedText) => {
+                    document.getElementById('btnOpen').style.display = "inline-block";
+                    document.getElementById('btnOpen').innerText = "Aç: " + decodedText.substring(0, 15) + "...";
+                    window.lastResult = decodedText;
+                }
+            ).catch(err => alert("Kamera icazəsi tələb olunur!"));
+        }
+
+        // Başlanğıcda icazə düyməsi göstərmək daha yaxşıdır
+        window.onload = () => {
+            const btn = document.createElement("button");
+            btn.innerText = "Skaneri Başlat";
+            btn.style = "position:absolute; top:50%; left:25%; padding:20px; z-index:20;";
+            btn.onclick = () => { startScanner(); btn.style.display = "none"; };
+            document.body.appendChild(btn);
+        };
+
+        // Qalereyadan oxumaq
+        function scanFile(input) {
+            if (input.files && input.files[0]) {
+                html5QrCode.scanFile(input.files[0], true)
+                    .then(decodedText => { window.location.href = decodedText; })
+                    .catch(err => alert("QR kod tapılmadı."));
             }
-        });
+        }
 
-        function openLink() { window.location.href = lastResult; }
+        // Flaş
+        function toggleFlash() {
+            const track = html5QrCode.getRunningTrackCapabilities();
+            if (track && track.torch) {
+                isFlashOn = !isFlashOn;
+                html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] });
+            }
+        }
+
+        // Zoom (Sadələşdirilmiş)
+        function changeZoom(val) {
+            currentZoom = Math.min(Math.max(currentZoom + val, 1), 3);
+            document.getElementById('reader').style.transform = `scale(${currentZoom})`;
+        }
+
+        function openLink() { window.location.href = window.lastResult; }
     </script>
 </body>
 </html>
-
