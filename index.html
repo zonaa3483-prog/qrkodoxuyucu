@@ -6,57 +6,56 @@
     <title>Ağıllı Skaner</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { margin: 0; background: #2c7a73; color: white; font-family: sans-serif; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        body { margin: 0; background: #000; color: white; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; }
         
-        /* Üst Menyu */
-        .top-menu { display: flex; justify-content: space-around; padding: 15px; background: #2c7a73; }
-        .menu-item { font-size: 14px; opacity: 0.8; cursor: pointer; }
-
-        /* Skaner Sahəsi */
-        #reader { flex-grow: 1; position: relative; background: #000; }
+        /* Skaner Konteyneri */
+        #reader { flex-grow: 1; position: relative; }
         
-        /* UI Elementləri */
-        .controls-overlay { position: absolute; bottom: 50px; width: 100%; text-align: center; }
-        .zoom-slider { width: 80%; accent-color: #f39c12; }
+        /* Üst İkonlar (Aydınlıq, Görünüştara, Yardım) */
+        .top-controls { display: flex; justify-content: space-around; padding: 20px; background: rgba(0,0,0,0.6); position: absolute; top: 0; width: 100%; z-index: 10; }
+        .icon-btn { text-align: center; font-size: 12px; cursor: pointer; }
         
-        #status { padding: 10px; background: rgba(0,0,0,0.5); }
-        .btn-container { margin-top: 10px; }
-        .btn { padding: 10px 20px; background: #f39c12; border: none; border-radius: 5px; color: white; cursor: pointer; }
+        /* Alt İdarəetmə (Zoom və Link) */
+        .bottom-controls { position: absolute; bottom: 40px; width: 100%; text-align: center; z-index: 10; }
+        .zoom-container { padding: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .zoom-slider { width: 70%; accent-color: #f39c12; }
+        
+        .btn { padding: 10px 20px; background: #f39c12; border: none; border-radius: 5px; color: white; cursor: pointer; display: none; }
     </style>
 </head>
 <body>
 
-    <div class="top-menu">
-        <span>Tara</span>
-        <span>Oluştur</span>
-        <span>Tarih</span>
-        <span>Ayarlar</span>
+    <div class="top-controls">
+        <div class="icon-btn">💡<br>Aydınlıq</div>
+        <div class="icon-btn">🖼️<br>Görüntü Tara</div>
+        <div class="icon-btn">❓<br>Yardım</div>
     </div>
 
     <div id="reader"></div>
 
-    <div class="controls-overlay">
-        <input type="range" class="zoom-slider" min="1" max="5" value="1">
-        <div id="status">Kodu oxumaq üçün kameranı açın.</div>
-        <div class="btn-container">
-            <button id="btnOpen" class="btn" style="display:none;" onclick="openLink()">Linkə Get</button>
+    <div class="bottom-controls">
+        <div class="zoom-container">
+            <span>🔍</span>
+            <input type="range" class="zoom-slider" min="1" max="5" value="1">
+            <span>🔍</span>
         </div>
+        <button id="btnOpen" class="btn" onclick="openLink()">Linkə Get</button>
     </div>
 
     <script>
         let lastResult = "";
         const html5QrCode = new Html5Qrcode("reader");
 
-        // Kamera parametrləri ilə başladılma
-        Html5Qrcode.getCameras().then(devices => {
+        // Kameranı başlat
+        Html5QrCode.getCameras().then(devices => {
             if (devices && devices.length) {
                 html5QrCode.start(
-                    { facingMode: "environment" }, // Arka kamera
+                    { facingMode: "environment" },
                     { fps: 10, qrbox: {width: 250, height: 250} },
                     (decodedText) => {
                         lastResult = decodedText;
-                        document.getElementById('status').innerText = "Tapıldı: " + decodedText;
                         document.getElementById('btnOpen').style.display = "inline-block";
+                        document.getElementById('btnOpen').innerText = "Aç: " + decodedText.substring(0, 15) + "...";
                     }
                 );
             }
@@ -66,3 +65,4 @@
     </script>
 </body>
 </html>
+
