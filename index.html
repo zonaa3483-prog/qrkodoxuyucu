@@ -46,15 +46,35 @@
         let isFlashOn = false;
 
         function startScanner() {
-            html5QrCode.start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: {width: 250, height: 250} },
-                (decodedText) => {
+            Html5Qrcode.getCameras().then(devices => {
+                if (devices && devices.length > 0) {
+                    // Cihazdaki arka kamerayı bulmaya çalış
+                    let cameraId = devices.find(d => /back|rear|environment/i.test(d.label))?.id || devices[devices.length - 1].id;
+                    
+                    html5QrCode.start(
+                        { deviceId: { exact: cameraId } },
+                        { fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 },
+                        (decodedText) => {
+                            lastResult = decodedText;
+                            document.getElementById('btnOpen').style.display = "inline-block";
+                            document.getElementById('btnOpen').innerText = "Aç: " + decodedText.substring(0, 15) + "...";
+                        }
+                    );
+                } else {
+                    // Kamera bulunamazsa varsayılan
+                    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: {width: 250, height: 250} }, (decodedText) => {
+                        lastResult = decodedText;
+                        document.getElementById('btnOpen').style.display = "inline-block";
+                        document.getElementById('btnOpen').innerText = "Aç: " + decodedText.substring(0, 15) + "...";
+                    });
+                }
+            }).catch(err => {
+                html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: {width: 250, height: 250} }, (decodedText) => {
                     lastResult = decodedText;
                     document.getElementById('btnOpen').style.display = "inline-block";
                     document.getElementById('btnOpen').innerText = "Aç: " + decodedText.substring(0, 15) + "...";
-                }
-            );
+                });
+            });
         }
 
         function toggleFlash() {
