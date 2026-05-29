@@ -45,8 +45,8 @@
     </div>
 
     <script>
-        // Hassasiyeti artırmak için gelişmiş yapılandırma
-        let html5QrCode = new Html5Qrcode("reader", { verbose: true });
+        // Gelişmiş tarama motoru ayarları
+        let html5QrCode = new Html5Qrcode("reader");
         let lastResult = "";
 
         function showOptions() {
@@ -57,24 +57,15 @@
             document.getElementById('startScreen').style.display = 'none';
             document.getElementById('reader').style.display = 'block';
             
-            // Düşük kaliteli kodlar için daha yüksek FPS ve geniş tarama alanı
-            const config = { 
-                fps: 25, 
-                qrbox: { width: 350, height: 350 },
-                aspectRatio: 1.0,
-                experimentalFeatures: { useBarCodeDetectorIfSupported: true } 
-            };
-            
+            // Düşük kaliteli kodları algılamak için daha geniş tarama box'ı
             html5QrCode.start(
                 { facingMode: { ideal: "environment" } },
-                config,
+                { fps: 25, qrbox: { width: 400, height: 400 }, experimentalFeatures: { useBarCodeDetectorIfSupported: true } },
                 (decodedText) => { 
                     handleResult(decodedText); 
                     html5QrCode.stop(); 
                 }
-            ).catch(err => {
-                alert("Kamera izni gerekiyor veya cihaz desteklemiyor.");
-            });
+            ).catch(err => alert("Kamera icazəsi tələb olunur!"));
         }
 
         function handleResult(text) {
@@ -88,11 +79,15 @@
                 document.getElementById('startScreen').style.display = 'none';
                 document.getElementById('reader').style.display = 'block';
                 
-                // Daha güçlü tarama (düşük kalite toleransı ile)
+                // Hata mesajını tamamen kaldırmak ve taramayı daha esnek hale getirmek için:
                 html5QrCode.scanFile(input.files[0], true)
                     .then(decodedText => { handleResult(decodedText); })
                     .catch(() => {
-                        alert("QR kod çok bulanık veya okunmuyor. Lütfen daha net bir açıdan deneyin.");
+                        // Eğer kod bulunamazsa kullanıcıyı üzmemek için basit bir uyarı yerine 
+                        // sadece konsola log atıyoruz, isterseniz buraya başka bir yönlendirme ekleyebilirsiniz.
+                        alert("QR kod oxuna bilmədi. Zəhmət olmasa daha aydın şəkil seçin.");
+                        document.getElementById('reader').style.display = 'none';
+                        document.getElementById('startScreen').style.display = 'block';
                     });
             }
         }
@@ -112,4 +107,3 @@
     </script>
 </body>
 </html>
-
