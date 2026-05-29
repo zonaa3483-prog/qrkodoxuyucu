@@ -7,13 +7,15 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { margin: 0; background: #000; color: white; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #reader { width: 100%; max-width: 500px; display: none; margin-bottom: 20px; }
+        #reader { width: 100%; max-width: 500px; display: none; position: relative; }
         .main-ui { text-align: center; }
-        .btn-start { padding: 15px 30px; background: #f39c12; border: none; border-radius: 5px; color: white; cursor: pointer; font-size: 18px; }
-        .top-controls { position: absolute; top: 20px; width: 100%; display: flex; justify-content: space-around; }
+        .btn-start { padding: 15px 30px; background: #f39c12; border: none; border-radius: 5px; color: white; cursor: pointer; font-size: 18px; margin: 10px; }
+        .top-controls { position: absolute; top: 20px; width: 100%; display: flex; justify-content: space-around; z-index: 10; }
         .icon-btn { color: white; cursor: pointer; background: none; border: none; font-size: 14px; }
-        #actions { display: none; flex-direction: column; gap: 10px; width: 80%; max-width: 300px; }
-        .btn { padding: 12px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
+        
+        /* Düymələrin kameranın üzərində olması üçün */
+        #actions { display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 300px; z-index: 20; flex-direction: column; gap: 10px; }
+        .btn { padding: 12px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; width: 100%; }
         #btnOpen { background: #27ae60; }
         #btnShare { background: #3498db; }
     </style>
@@ -29,32 +31,36 @@
 
     <div id="startScreen" class="main-ui">
         <h1>QR Kodu oxucu</h1>
-        <button class="btn-start" onclick="activateScanner()">Üzərinə vur</button>
+        <button class="btn-start" onclick="showOptions()">Üzərinə vur</button>
+        <div id="options" style="display:none;">
+            <button class="btn-start" onclick="activateScanner()">Kamera ilə</button>
+            <button class="btn-start" onclick="document.getElementById('fileInput').click()">Qalereyadan</button>
+        </div>
     </div>
 
-    <div id="reader"></div>
-    
-    <div id="actions">
-        <button id="btnOpen" class="btn" onclick="openLink()">Aç</button>
-        <button id="btnShare" class="btn" onclick="shareResult()">Paylaş / Digər tətbiqlərdə aç</button>
+    <div id="reader">
+        <div id="actions">
+            <button id="btnOpen" class="btn" onclick="openLink()">Aç</button>
+            <button id="btnShare" class="btn" onclick="shareResult()">Paylaş</button>
+        </div>
     </div>
 
     <script>
         let html5QrCode = new Html5Qrcode("reader");
         let lastResult = "";
 
+        function showOptions() {
+            document.getElementById('options').style.display = 'block';
+        }
+
         function activateScanner() {
             document.getElementById('startScreen').style.display = 'none';
             document.getElementById('reader').style.display = 'block';
             
-            // Avtomatik skan üçün konfiqurasiya
             html5QrCode.start(
                 { facingMode: { ideal: "environment" } },
                 { fps: 10, qrbox: 250 },
-                (decodedText) => { 
-                    handleResult(decodedText);
-                    html5QrCode.stop(); // Skan edildikdən sonra kameranı dayandırır
-                }
+                (decodedText) => { handleResult(decodedText); html5QrCode.stop(); }
             ).catch(err => alert("Kamera icazəsi tələb olunur!"));
         }
 
@@ -75,19 +81,15 @@
         }
 
         function openLink() { 
-            // Brauzerin özündə açmaq
             if(lastResult.startsWith('http')) window.open(lastResult, '_blank');
             else alert("Mətn: " + lastResult);
         }
 
         function shareResult() {
-            // Paylaş düyməsi istifadəçiyə Chrome, WhatsApp, Telegram və s. seçimlərini təqdim edir
             if (navigator.share) {
-                navigator.share({ title: 'QR Nəticəsi', text: 'QR koddan tapılan link:', url: lastResult })
-                    .catch(err => console.log("Paylaşım ləğv edildi"));
+                navigator.share({ title: 'QR Nəticəsi', url: lastResult }).catch(err => {});
             } else {
-                // Əgər paylaşım dəstəklənmirsə, linki kopyalamaq üçün göstər
-                prompt("Linkinizi kopyalayın:", lastResult);
+                prompt("Linki kopyalayın:", lastResult);
             }
         }
     </script>
