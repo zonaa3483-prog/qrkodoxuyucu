@@ -6,58 +6,63 @@
     <title>Ağıllı Skaner</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { margin: 0; padding: 0; font-family: sans-serif; background: #1a1a1a; color: white; }
-        #reader { width: 100%; height: 50vh; }
-        .controls { padding: 20px; text-align: center; }
-        .btn { display: none; padding: 15px 30px; background: #f39c12; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 5px; }
-        #cameraSelect { padding: 10px; margin: 10px; border-radius: 5px; }
+        body { margin: 0; background: #2c7a73; color: white; font-family: sans-serif; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        
+        /* Üst Menyu */
+        .top-menu { display: flex; justify-content: space-around; padding: 15px; background: #2c7a73; }
+        .menu-item { font-size: 14px; opacity: 0.8; cursor: pointer; }
+
+        /* Skaner Sahəsi */
+        #reader { flex-grow: 1; position: relative; background: #000; }
+        
+        /* UI Elementləri */
+        .controls-overlay { position: absolute; bottom: 50px; width: 100%; text-align: center; }
+        .zoom-slider { width: 80%; accent-color: #f39c12; }
+        
+        #status { padding: 10px; background: rgba(0,0,0,0.5); }
+        .btn-container { margin-top: 10px; }
+        .btn { padding: 10px 20px; background: #f39c12; border: none; border-radius: 5px; color: white; cursor: pointer; }
     </style>
 </head>
 <body>
 
+    <div class="top-menu">
+        <span>Tara</span>
+        <span>Oluştur</span>
+        <span>Tarih</span>
+        <span>Ayarlar</span>
+    </div>
+
     <div id="reader"></div>
-    
-    <div class="controls">
-        <select id="cameraSelect" style="display:none;"></select>
-        <p id="status">Kodu oxumaq üçün kameranı açın.</p>
-        <button id="btnOpenInternal" class="btn" onclick="openInternal()">Tətbiqdə Aç</button>
-        <button id="btnOpenExternal" class="btn" onclick="openExternal()">Brauzerdə (Chrome) Aç</button>
+
+    <div class="controls-overlay">
+        <input type="range" class="zoom-slider" min="1" max="5" value="1">
+        <div id="status">Kodu oxumaq üçün kameranı açın.</div>
+        <div class="btn-container">
+            <button id="btnOpen" class="btn" style="display:none;" onclick="openLink()">Linkə Get</button>
+        </div>
     </div>
 
     <script>
         let lastResult = "";
         const html5QrCode = new Html5Qrcode("reader");
 
-        // Kamerayı başlatma fonksiyonu
-        function startScanner(cameraId) {
-            html5QrCode.start(
-                cameraId, 
-                { fps: 10, qrbox: {width: 250, height: 250} },
-                (decodedText) => {
-                    lastResult = decodedText;
-                    document.getElementById('status').innerText = "Kod tapıldı: " + decodedText;
-                    html5QrCode.pause(); // Taramayı durdur
-                    document.getElementById('btnOpenInternal').style.display = "inline-block";
-                    document.getElementById('btnOpenExternal').style.display = "inline-block";
-                }
-            );
-        }
-
-        // Kamera listesini al ve arka kamerayı seç
+        // Kamera parametrləri ilə başladılma
         Html5Qrcode.getCameras().then(devices => {
             if (devices && devices.length) {
-                // Arka kamerayı bulmaya çalış (genellikle "back" içerir)
-                let backCamera = devices.find(d => d.label.toLowerCase().includes('back')) || devices[devices.length - 1];
-                
-                startScanner(backCamera.id);
+                html5QrCode.start(
+                    { facingMode: "environment" }, // Arka kamera
+                    { fps: 10, qrbox: {width: 250, height: 250} },
+                    (decodedText) => {
+                        lastResult = decodedText;
+                        document.getElementById('status').innerText = "Tapıldı: " + decodedText;
+                        document.getElementById('btnOpen').style.display = "inline-block";
+                    }
+                );
             }
-        }).catch(err => {
-            document.getElementById('status').innerText = "Kamera tapılmadı: " + err;
         });
 
-        function openInternal() { window.location.href = lastResult; }
-        function openExternal() { window.open(lastResult, '_system'); }
+        function openLink() { window.location.href = lastResult; }
     </script>
 </body>
 </html>
-
