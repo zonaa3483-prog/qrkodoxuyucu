@@ -6,77 +6,51 @@
     <title>Ağıllı Skaner</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        #reader { flex-grow: 1; position: relative; }
-        #reader video { width: 100%; height: 100%; object-fit: cover; }
-        .top-controls { display: flex; justify-content: space-around; padding: 20px; background: rgba(0,0,0,0.4); position: absolute; top: 0; width: 100%; z-index: 10; }
-        .icon-btn { text-align: center; font-size: 12px; cursor: pointer; color: white; border: none; background: none; }
-        .bottom-controls { position: absolute; bottom: 40px; width: 100%; text-align: center; z-index: 10; }
-        .zoom-slider { width: 70%; accent-color: #f39c12; margin-bottom: 20px; }
-        .btn { padding: 10px 25px; background: #f39c12; border: none; border-radius: 5px; color: white; cursor: pointer; display: none; font-weight: bold; font-size: 16px; }
-        #instruction { position: absolute; top: 40%; width: 100%; text-align: center; color: #fff; font-size: 18px; z-index: 5; padding: 0 20px; text-shadow: 1px 1px 2px black; cursor: pointer; }
+        body { margin: 0; background: #000; color: white; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #reader { width: 100%; max-width: 500px; display: none; }
+        .main-ui { text-align: center; }
+        .btn-start { padding: 15px 30px; background: #f39c12; border: none; border-radius: 5px; color: white; cursor: pointer; font-size: 18px; margin-top: 20px; }
+        .top-controls { position: absolute; top: 20px; width: 100%; display: flex; justify-content: space-around; }
+        .icon-btn { color: white; cursor: pointer; background: none; border: none; font-size: 14px; }
+        #btnOpen { margin-top: 20px; padding: 10px 20px; background: #27ae60; border: none; border-radius: 5px; color: white; display: none; }
     </style>
 </head>
 <body>
 
     <div class="top-controls">
-        <button class="icon-btn" onclick="toggleFlash()">💡<br>Flaş</button>
         <button class="icon-btn" onclick="document.getElementById('fileInput').click()">🖼️<br>Qalereya</button>
-        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="scanFile(this)">
         <button class="icon-btn" onclick="window.location.href='https://elimeherremov.taplink.ws/'">❓<br>Yardım</button>
     </div>
 
-    <div id="instruction">
-        Kameranı aktiv etmək üçün buraya toxunun!
+    <div id="startScreen" class="main-ui">
+        <h1>QR Kodu oxucu</h1>
+        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="scanFile(this)">
+        <button class="btn-start" onclick="activateScanner()">Üzərinə vur</button>
     </div>
 
     <div id="reader"></div>
-
-    <div class="bottom-controls">
-        <input type="range" class="zoom-slider" min="1" max="3" step="0.1" value="1" oninput="applyZoom(this.value)">
-        <br>
-        <button id="btnOpen" class="btn" onclick="openLink()">Aç</button>
-    </div>
+    <button id="btnOpen" onclick="openLink()">Aç</button>
 
     <script>
         let html5QrCode = new Html5Qrcode("reader");
         let lastResult = "";
-        let isFlashOn = false;
 
-        async function startScanner() {
-            try {
-                const config = { fps: 15, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 };
-                await html5QrCode.start(
-                    { facingMode: { ideal: "environment" } }, 
-                    config,
-                    (decodedText) => { handleResult(decodedText); }
-                );
-                document.getElementById('instruction').style.display = "none";
-            } catch (err) {
-                alert("Kamera icazəsi tələb olunur.");
-            }
+        function activateScanner() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('reader').style.display = 'block';
+            
+            html5QrCode.start(
+                { facingMode: { ideal: "environment" } },
+                { fps: 10, qrbox: 250 },
+                (decodedText) => { handleResult(decodedText); }
+            ).catch(err => alert("Kamera xətası: " + err));
         }
 
         function handleResult(text) {
             lastResult = text;
             const btn = document.getElementById('btnOpen');
-            btn.style.display = "inline-block";
+            btn.style.display = "block";
             btn.innerText = "Aç: " + (text.length > 15 ? text.substring(0, 15) + "..." : text);
-            document.getElementById('instruction').style.display = "none";
-        }
-
-        async function toggleFlash() {
-            isFlashOn = !isFlashOn;
-            try {
-                await html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] });
-            } catch (err) {
-                alert("Flaş bu cihazda dəstəklənmir.");
-            }
-        }
-
-        function applyZoom(val) {
-            const video = document.querySelector("#reader video");
-            if (video) video.style.transform = `scale(${val})`;
         }
 
         function scanFile(input) {
@@ -88,21 +62,9 @@
         }
 
         function openLink() { 
-            if(lastResult) {
-                if(lastResult.startsWith('http')) {
-                    window.location.href = lastResult;
-                } else {
-                    alert("Mətn: " + lastResult);
-                }
-            }
+            if(lastResult.startsWith('http')) window.location.href = lastResult;
+            else alert("Mətn: " + lastResult);
         }
-
-        // İstifadəçi ekrana ilk dəfə toxunduqda kamera aktivləşir (Brauzer qaydası)
-        document.body.addEventListener('click', () => {
-            if (!html5QrCode.isScanning) {
-                startScanner();
-            }
-        }, { once: true });
     </script>
 </body>
 </html>
